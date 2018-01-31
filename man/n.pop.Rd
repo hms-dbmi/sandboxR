@@ -4,7 +4,7 @@
 \alias{n.pop}
 \title{Gets the population number of the study}
 \usage{
-n.pop(phs, consentgroups = TRUE)
+n.pop(phs, consentgroups = TRUE, gender = FALSE)
 }
 \arguments{
 \item{phs}{dbGap study ID (phs00xxxx, or 00xxxx, or xxx)}
@@ -12,7 +12,7 @@ n.pop(phs, consentgroups = TRUE)
 \item{consentgroup}{if false, will return only the total number of participants}
 }
 \value{
-a data.frame with 4 cols : name of the consent group, n male, n female, n total
+a data.frame with 2 cols : name of the consent group and n total. Possibility to add the breakdown by gender
 }
 \description{
 This function extracts informations from data.dict.xml files from the dbgap ftp server to get the population characteristics. Works only for parents studies.

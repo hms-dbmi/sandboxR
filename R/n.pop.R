@@ -3,7 +3,7 @@
 #' @param phs dbGap study ID (phs00xxxx, or 00xxxx, or xxx)
 #' @param consentgroup if false, will return only the total number of participants
 #'
-#' @return a data.frame with 4 cols : name of the consent group, n male, n female, n total
+#' @return a data.frame with 2 cols : name of the consent group and n total. Possibility to add the breakdown by gender
 #'
 #' @description This function extracts informations from data.dict.xml files from the dbgap ftp server to get the population characteristics. Works only for parents studies.
 #' @import XML
@@ -13,7 +13,7 @@
 #' @export
 
 
-n.pop <- function(phs, consentgroups = TRUE)  {
+n.pop <- function(phs, consentgroups = TRUE, gender = FALSE)  {
 
   phs <- phs.version(phs)
   url<- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/")
@@ -55,6 +55,7 @@ n.pop <- function(phs, consentgroups = TRUE)  {
 
   colnames(temp) <- c("consent_group", "male", "female", "total")
 
+  if (gender == FALSE)  temp <- temp[,c(1,4)]
   if (consentgroups == TRUE)  return(temp)
   if (consentgroups == FALSE) return(as.numeric(temp[nrow(temp), ncol(temp)]))
 

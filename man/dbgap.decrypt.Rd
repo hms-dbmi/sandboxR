@@ -4,12 +4,7 @@
 \alias{dbgap.decrypt}
 \title{Decrypt ncbi_enc files}
 \usage{
-dbgap.decrypt(file, key)
-}
-\arguments{
-\item{file}{Pathway to the encrypted file or to the folder where the encrypted files are located}
-
-\item{key}{Pathway to the key (*.ngc)}
+dbgap.decrypt()
 }
 \value{
 Decrypt the file(s) and replace it in the same folder

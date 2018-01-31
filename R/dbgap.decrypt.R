@@ -1,8 +1,5 @@
 #' @title Decrypt ncbi_enc files
 #'
-#' @param file Pathway to the encrypted file or to the folder where the encrypted files are located
-#' @param key Pathway to the key (*.ngc)
-#'
 #' @return Decrypt the file(s) and replace it in the same folder
 #'
 #' @description This function decrypts dbGap files (*ncbi_enc) using your personnal key. Be careful, it can replace the settings of your "vdb-info" file
@@ -10,12 +7,16 @@
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
 
-
-
-#' @export
-dbgap.decrypt <- function(file, key)  {
+dbgap.decrypt <- function()  {
 
 ## escape regex symbols
+
+message("Where is the file you want to decrypt?")
+file <- file.choose()
+
+message("Where is your key?")
+key <- file.choose()
+
 file <- gsub(" ", "\\\\ ", file)
 key <- gsub(" ", "\\\\ ", key)
 
@@ -47,3 +48,5 @@ file.remove(repo)
 sra <- list.files(pattern = "sratoolkit*")
 system(paste0("rm -r ./", sra))
 }
+
+
