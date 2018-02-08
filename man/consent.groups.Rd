@@ -12,6 +12,9 @@ consent.groups(phs)
 \value{
 Returns a data frame with 3 cols : "consent group number", "cg short name" and "cg long name"
 }
+\description{
+Gets you the list of the consent groups of the study
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

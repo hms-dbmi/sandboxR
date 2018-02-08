@@ -12,6 +12,9 @@ sub.study(phs)
 \value{
 Returns a dataframe with 2 cols : the phs id and the name of the substudy
 }
+\description{
+Gives the substudies associated with the one selected
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

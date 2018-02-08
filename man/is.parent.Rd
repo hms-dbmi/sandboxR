@@ -12,6 +12,9 @@ is.parent(phs)
 \value{
 Returns a logical TRUE if the study is a parent, and false if the study is a child
 }
+\description{
+Is the study a parent or a child study
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

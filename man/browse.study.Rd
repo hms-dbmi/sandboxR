@@ -14,6 +14,9 @@ browse.study(phs, jupyter = FALSE)
 \value{
 Open the study webpage in a web browser
 }
+\description{
+Open the study webpage in a web browser
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

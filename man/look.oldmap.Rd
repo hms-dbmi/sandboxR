@@ -14,6 +14,9 @@ look.oldmap(mappath, old)
 \value{
 Return a view of your old mapping file as a data.frame
 }
+\description{
+View an old mapping file on R
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

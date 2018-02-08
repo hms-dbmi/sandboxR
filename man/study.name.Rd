@@ -12,6 +12,9 @@ study.name(phs)
 \value{
 Returns the full name of the study
 }
+\description{
+Gets you the full name of the study on dbGap
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

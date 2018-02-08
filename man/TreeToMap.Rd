@@ -12,6 +12,9 @@ TreeToMap(mappath)
 \value{
 A new mapping file "0_map.csv" according to your tree structure. The old map is moved to a hidden folder ".oldmaps"
 }
+\description{
+Change your mapping file according to the tree structure
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

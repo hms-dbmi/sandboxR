@@ -14,6 +14,9 @@ search.dbgap(term, jupyter = FALSE)
 \value{
 Open the results of your search on dbGap
 }
+\description{
+Open the results of your search on dbGap
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

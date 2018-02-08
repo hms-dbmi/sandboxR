@@ -12,6 +12,9 @@ MapToTree(mappath)
 \value{
 Move and rename the files in the tree folder according to your mapping file
 }
+\description{
+Change the structure of your tree folder using your mapping file
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

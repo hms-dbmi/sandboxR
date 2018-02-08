@@ -14,6 +14,9 @@ browse.dbgap(phs, jupyter = FALSE)
 \value{
 Open the dbGap webpag of your study in your browser
 }
+\description{
+Open the dbGap webpag of your study in your browser
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }

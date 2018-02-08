@@ -14,6 +14,9 @@ recover.map(oldcsv, mappath)
 \value{
 A new tree structure, according to the old map that you selected. The 0_map.csv is also changed for the one that you chose, and the old map is saved in the .oldmap folder
 }
+\description{
+Change the structure of your tree folder using an old mapping file
+}
 \author{
 Gregoire Versmee, Laura Versmee
 }
