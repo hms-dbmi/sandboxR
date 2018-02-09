@@ -33,7 +33,7 @@ for (i in 1:nrow(map))  {
   newpath <- paste0(newpath, "/", gsub("/", "|", map[i,5]), " ", map[i,1], ".csv")
   if (gsub(paste0(treepath, "/"), "", newpath) != map[i,20])  {
     file.copy(paste0(treepath, "/", map[i, 20]), newpath)
-    file.remove(map[i,20])
+    file.remove(paste0(treepath, map[i,20]))
     map[i, 20] <- as.character(gsub(paste0(treepath, "/"), "", newpath))
   }
 }
