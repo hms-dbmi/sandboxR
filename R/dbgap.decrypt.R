@@ -12,7 +12,8 @@ dbgap.decrypt <- function(file, key){
     ## file paths cleaning and quoting
     file = shQuote( normalizePath( file ))
     key  = shQuote( normalizePath( key ))
-
+    wd = getwd()
+    
     ## get the R temp dir (for the decryption tool)
     config.dir = tempdir()
     
@@ -24,4 +25,7 @@ dbgap.decrypt <- function(file, key){
 
     ## decrypt the files
     g <- system2("vdb-decrypt", file)
+
+    ## go back to initial working dir
+    setwd(wd)
 }
