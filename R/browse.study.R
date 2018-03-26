@@ -18,8 +18,7 @@ browse.study <- function(phs, jupyter = FALSE)  {
   url <- xmllist[["Studies"]][["Study"]][["Configuration"]][["StudyURLs"]][["Url"]][["url"]]
   browseURL(url)
 
-  if (jupyter == FALSE)  browseURL(url)
-  if (jupyter == TRUE)  return(url)
+  if (jupyter == FALSE)  browseURL(url)  else  return(url)
 
 }
 

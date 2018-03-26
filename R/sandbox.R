@@ -18,15 +18,14 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
   wd <- getwd()
   mappath <- paste0(tree_dest, "/", study_name, "_map")
   treepath <- paste0(mappath, "/", study_name, "_tree")
-  if (dir.exists(mappath) == FALSE)  dir.create(mappath)
-  if (dir.exists(treepath) == FALSE)  dir.create(treepath)
+  dir.create(mappath, showWarnings = FALSE)
+  dir.create(treepath, showWarnings = FALSE)
+  dir.create(paste0(mappath, "/.oldmaps"), showWarnings = FALSE)
 
   ##Write the first map
-  if (dir.exists(paste0(mappath, "/.oldmaps")) == FALSE)  dir.create(paste0(mappath, "/.oldmaps"))
   map <- data.frame(matrix(ncol = 20))
   count <- 1
-  cnames <- c("phv", "study_name", "var_desc", "var_study_name",  "data_label", paste0("sd",1:14), "pathway")
-  colnames(map) <- cnames
+  colnames(map) <- c("phv", "study_name", "var_desc", "var_study_name",  "data_label", paste0("sd",1:14), "pathway")
 
   #read datatablesdict and variablesidct
   datatablesdict <- datatables.dict(phs)
@@ -37,9 +36,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
 
     ## List the text files with the variables data
     setwd(consent_groups[i])
-    temp <- list.files(pattern = ".txt", recursive = TRUE)
-    ind <- grepl("MULTI.txt", temp)
-    g <- temp[!ind]
+    g <- list.files(pattern = ".txt.gz", recursive = TRUE)
 
     # extract the datatables characteristics from the datatablesdict
     for (j in 1:length(g))  {
@@ -50,9 +47,9 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
       inddt <- which(datatablesdict[2] == st_name)
       pht <- as.character(datatablesdict[inddt, 1])
       st_desc <- as.character(datatablesdict[inddt, 3])
-      if (is.na(st_desc))  st_desc <- st_name
+      if (is.null(st_desc))  st_desc <- st_name
       if (nchar(as.character(st_desc)) > 255)  st_desc <- substr(st_desc, 1, 255)
-      if (dir.exists(paste0(treepath, "/", st_desc)) == FALSE)  dir.create(paste0(treepath, "/", st_desc), recursive = TRUE)
+      dir.create(paste0(treepath, "/", st_desc), recursive = TRUE, showWarnings = FALSE)
 
       # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable
       for (k in 3:ncol(v))  {
