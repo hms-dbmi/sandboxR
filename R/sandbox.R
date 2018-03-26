@@ -18,8 +18,8 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
   wd <- getwd()
   mappath <- paste0(tree_dest, "/", study_name, "_map")
   treepath <- paste0(mappath, "/", study_name, "_tree")
-  if (dir.exists(mappath) == FALSE)  dir.create(mappath)
-  if (dir.exists(treepath) == FALSE)  dir.create(treepath)
+  dir.create(mappath, showWarnings = FALSE)
+  dir.create(treepath, showWarnings = FALSE)
 
   ##Write the first map
   if (dir.exists(paste0(mappath, "/.oldmaps")) == FALSE)  dir.create(paste0(mappath, "/.oldmaps"))
