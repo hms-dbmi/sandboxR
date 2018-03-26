@@ -22,7 +22,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
   dir.create(treepath, showWarnings = FALSE)
 
   ##Write the first map
-  if (dir.exists(paste0(mappath, "/.oldmaps")) == FALSE)  dir.create(paste0(mappath, "/.oldmaps"))
+  dir.create(paste0(mappath, "/.oldmaps"), showWarnings = FALSE)
   map <- data.frame(matrix(ncol = 20))
   count <- 1
   cnames <- c("phv", "study_name", "var_desc", "var_study_name",  "data_label", paste0("sd",1:14), "pathway")
