@@ -50,7 +50,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
       inddt <- which(datatablesdict[2] == st_name)
       pht <- as.character(datatablesdict[inddt, 1])
       st_desc <- as.character(datatablesdict[inddt, 3])
-      if (is.na(st_desc))  st_desc <- st_name
+      if (is.null(st_desc))  st_desc <- st_name
       if (nchar(as.character(st_desc)) > 255)  st_desc <- substr(st_desc, 1, 255)
       if (dir.exists(paste0(treepath, "/", st_desc)) == FALSE)  dir.create(paste0(treepath, "/", st_desc), recursive = TRUE)
 
