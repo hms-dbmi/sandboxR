@@ -24,14 +24,8 @@ datatables.dict <-function (phs)  {
   temp <- filelist[(grepl(".data_dict.xml", filelist)) & (!grepl("Sample_Attributes.data_dict.xml", filelist)) &
         (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
 
-  #Create the data.frames
-  datatablesdict <- data.frame()
-
-  #Create column names
-  cnamesdt <- c("pht", "dt_study_name", "dt_label")
-
   #Looping!!
-  return(data.frame(t(as.data.frame(
+  df <- data.frame(t(as.data.frame(
   mclapply(temp, function(e) {
     xmllist <- XML::xmlToList(RCurl::getURLContent(paste0(phenodir, e)))
 
@@ -42,5 +36,10 @@ datatables.dict <-function (phs)  {
 
     return(c(dt_name, dt_sn, dt_label))
   }, mc.cores = getOption("mc.cores", detectCores()))
-  , check.names = FALSE, fix.empty.names = FALSE, stringsAsFactors = FALSE))))
+  , check.names = FALSE, fix.empty.names = FALSE, stringsAsFactors = FALSE)))
+
+  #Create column names
+  colnames(df) <- c("pht", "dt_study_name", "dt_label")
+
+  return(df)
 }
