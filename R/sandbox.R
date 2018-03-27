@@ -53,39 +53,44 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
   # write the first map
   map <- data.table::rbindlist(mcl)[,c(4,1,2,6,5,6,3)]
   map <- data.frame(apply(map,2, as.character))
-  map[,6] <- substr(map[,3], 1, 230)
+  map[,6] <- substr(map[,4], 1, 230)
   map[,8:15] <- NA
-  map[,16] <- paste0(gsub("/", "|", map[,7]), "/", map[,6], " ", map[,1], ".csv")
+  map[,16] <- paste0(gsub("/", "|", map[,7]), "/", gsub("/", "|", map[,6]), " ", map[,1], ".csv")
   colnames(map) <- c("phv", "pht", "study_name", "var_desc", "var_study_name", "data_label", paste0("sd",1:9), "pathway")
 
   ## For each consent groups
-  g <- c()
   for (i in 1:length(consent_groups))  {
-    g <- c(g, list.files(path = consent_groups[i], pattern = ".txt.gz", full.names = TRUE))
-    g <- g[(!grepl("Sample_Attributes", g))]
-  }
+    g <- list.files(path = consent_groups[i], pattern = ".txt.gz", recursive = TRUE, full.names = TRUE)
+    g <- g[(!grepl("Sample_Attributes", g)) & (!grepl("MULTI.txt.gz", g))]
 
-  parallel::mclapply(g, function(e) {
-    v <- read.csv(file = e, header = TRUE, sep = "\t", comment.char = "#")
-    if (ncol(v) > 2) {
-      g_pht <- regexpr("pht", e)
-      g_pht <- substr(e, g_pht, g_pht+8)
-      listmcl <- map[map[,2] == g_pht,]
+    lapply(g, function(e) {
+      message(e)
+      v <- read.csv(file = e, header = TRUE, sep = "\t", comment.char = "#")
+      if (ncol(v) > 2) {
+        g_pht <- regexpr("pht", e)
+        g_pht <- substr(e, g_pht, g_pht+8)
+        listmcl <- map[map[,2] == g_pht,]
 
-      # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable
-      for (i in 3:ncol(v))  {
-       df <- v[,c(1,i)]
-       filepath <- paste0(treepath, "/", listmcl[i-2, 16])
+        # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable
+        for (j in 3:ncol(v))  {
+         df <- v[,c(1,j)]
+         filepath <- paste0(treepath, "/", listmcl[j-2, 16])
 
-       if (file.exists(filepath)) {
-         output <- read.csv(file = filepath, header = TRUE)
-         df <- rbind(output, df)
-         df <- unique(df)
-       }
-       write.csv(df, file = filepath, row.names = FALSE)
+         if (file.exists(filepath)) {
+           output <- read.csv(file = filepath, header = TRUE, stringsAsFactors = FALSE)
+           df <- rbind(output, df)
+           df <- unique(df)
+         }
+         write.csv(df, file = filepath, row.names = FALSE)
+        }
       }
-    }
-  }, mc.cores = getOption("mc.cores", detectCores()))
+    })
+  }
 
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
 }
+
+phs <- "285"
+study_name <- "CARDIA"
+consent_groups <- c("/Volumes/PIC-FAIR/dbGaP_export/Download/CARDIA_IRB", "/Volumes/PIC-FAIR/dbGaP_export/Download/CARDIA_IRB_NPU")
+sandbox("phs000285", cg, destination, "CARDIA")
