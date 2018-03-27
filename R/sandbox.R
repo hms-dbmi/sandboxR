@@ -63,7 +63,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
     g <- list.files(path = consent_groups[i], pattern = ".txt.gz", recursive = TRUE, full.names = TRUE)
     g <- g[(!grepl("Sample_Attributes", g)) & (!grepl("MULTI.txt.gz", g))]
 
-    lapply(g, function(e) {
+    parallel::mclapply(g, function(e) {
       message(e)
       v <- read.csv(file = e, header = TRUE, sep = "\t", comment.char = "#")
       if (ncol(v) > 2) {
@@ -84,13 +84,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
          write.csv(df, file = filepath, row.names = FALSE)
         }
       }
-    })
+    }, mc.cores = getOption("mc.cores", detectCores()))
   }
-
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
 }
-
-phs <- "285"
-study_name <- "CARDIA"
-consent_groups <- c("/Volumes/PIC-FAIR/dbGaP_export/Download/CARDIA_IRB", "/Volumes/PIC-FAIR/dbGaP_export/Download/CARDIA_IRB_NPU")
-sandbox("phs000285", cg, destination, "CARDIA")
