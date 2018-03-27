@@ -7,6 +7,7 @@
 #' @description This function extracts informations from data.dict.xml files from the dbgap ftp server to create a table dictionnary.
 #' @import XML
 #' @import RCurl
+#' @import parallel
 #'
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
@@ -26,7 +27,7 @@ datatables.dict <-function (phs)  {
 
   #Looping!!
   df <- data.frame(t(as.data.frame(
-  mclapply(temp, function(e) {
+  parallel::mclapply(temp, function(e) {
     xmllist <- XML::xmlToList(RCurl::getURLContent(paste0(phenodir, e)))
 
     dt_name <- xmllist[[".attrs"]][["id"]]

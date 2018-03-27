@@ -7,6 +7,7 @@
 #' @description This function extracts informations from data.dict.xml files from the dbgap ftp server to create a variable dictionnary.
 #' @import XML
 #' @import RCurl
+#' @import parallel
 #' @import data.table
 #'
 #' @author Gregoire Versmee, Laura Versmee
@@ -25,7 +26,7 @@ variables.dict <-function (phs)  {
   temp <- filelist[(grepl(".data_dict.xml", filelist)) & (!grepl("Sample_Attributes.data_dict.xml", filelist)) &
                      (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
 
-  test <- lapply(temp, function(e) {
+  mcl <- parallel::mclapply(temp, function(e) {
     xmllist <- XML::xmlToList(RCurl::getURLContent(paste0(phenodir, e)))
     dt_name <- xmllist[[".attrs"]][["id"]]
     dt_sn <- substr(e, regexpr(dt_name, e) + nchar(dt_name)+1, regexpr(".data_dict", e)-1)
@@ -37,10 +38,10 @@ variables.dict <-function (phs)  {
 
   }, mc.cores = getOption("mc.cores", detectCores()))
 
-  pif <- data.table::rbindlist(test)
+  table <- data.table::rbindlist(mcl)
 
   #Create column names
-  colnames(pif) <- c("dt_study_name", "phv", "var_name", "var_desc")
+  colnames(table) <- c("dt_study_name", "phv", "var_name", "var_desc")
 
-  return(pif)
+  return(table)
 }
