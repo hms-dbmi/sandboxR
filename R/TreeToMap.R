@@ -11,7 +11,7 @@
 TreeToMap <- function(mappath)  {
 
   ## save the old map file, with date and time
-  map <- read.csv(paste0(mappath, "/0_map.csv"), header = TRUE, na.strings = "")
+  map <- read.csv(paste0(mappath, "/0_map.csv"), header = TRUE, na.strings = "", stringsAsFactors = FALSE)
   dir.create(paste0(mappath, "/.oldmaps"), showWarnings = FALSE)
   write.csv(map, paste0(mappath, "/.oldmaps/map_", format(Sys.time(), format = "%Y-%m-%d_%H%M_%Z"), ".csv"), row.names = FALSE, na ="")
 
