@@ -19,7 +19,7 @@ TreeToMap <- function(mappath)  {
   system(paste("find", mappath,"-empty -type d -delete"))
 
   ## Get the pathways for each file in the tree
-  treepath <- list.dirs(mappath, recursive = FALSE)
+  treepath <- list.dirs(mappath, recursive = FALSE, full.names = TRUE)
   treepath <- treepath[grepl("_tree", treepath)]
   a <- list.files(treepath, full.names = TRUE, recursive = TRUE)
   a <- trimws(sub(paste0(treepath, "/") ,"", a))
