@@ -10,52 +10,36 @@
 
 TreeToMap <- function(mappath)  {
 
-  wd <- getwd()
-
   ## save the old map file, with date and time
-  oldmap <- paste0(mappath, "/0_map.csv")
-  if (dir.exists(paste0(mappath, "/.oldmaps")) == FALSE)  dir.create(paste0(mappath, "/.oldmaps"))
-  file.copy(oldmap, paste0(mappath, "/.oldmaps/map_", format(Sys.time(), format = "%Y-%m-%j %H%M %Z"), ".csv"))
+  map <- read.csv(paste0(mappath, "/0_map.csv"), header = TRUE, na.strings = "")
+  dir.create(paste0(mappath, "/.oldmaps"), showWarnings = FALSE)
+  write.csv(map, paste0(mappath, "/.oldmaps/map_", format(Sys.time(), format = "%Y-%m-%d_%H%M_%Z"), ".csv"), row.names = FALSE, na ="")
 
   ## Remove empty directories
-  setwd(mappath)
-  system("find . -empty -type d -delete")
+  system(paste("find", mappath,"-empty -type d -delete"))
 
-  ## Get thhe pathways for each file in the tree
-  foo <- grepl("_tree", list.dirs(mappath, recursive = FALSE, full.names = FALSE))
-  treepath <- list.dirs(mappath, recursive = FALSE)[foo]
+  ## Get the pathways for each file in the tree
+  treepath <- list.dirs(mappath, recursive = FALSE)
+  treepath <- treepath[grepl("_tree", treepath)]
   a <- list.files(treepath, full.names = TRUE, recursive = TRUE)
-  a <- gsub(paste0(treepath, "/"), "", a)
-  b <- strsplit(a, "/")
+  a <- trimws(sub(paste0(treepath, "/") ,"", a))
+  pathways <- a
 
-  ## Create the data.frame
-  new <- data.frame(matrix(ncol = 17))
-  cnames <- c("phv", "data_label", paste0("sd",1:14), "pathway")
-  colnames(new) <- cnames
+  ## Get the phv
+  regexpr <- regexpr("phv", a)
+  phv <- substr(a, regexpr, nchar(a)-4)
 
-  ## Looping
-  for (i in 1:length(b))  {
-    dim <- length(b[[i]]) - 1
-    end <- dim + 1
-    nb_col <- 1:end
-    file1 <- unlist(strsplit(b[[i]][[length(b[[i]])]], " "))
-    file2 <- file1[length(file1)]
-    phv <- substr(file2, 1, regexpr(".csv", file2)-1)
-    data_label <- substr(b[[i]][[length(b[[i]])]], 1, regexpr(phv, b[[i]][[length(b[[i]])]]) - 2)
-    new[i,1] <- phv
-    new[i,2] <- data_label
-    b[[i]][[end]] <- NA
-    new[i,nb_col + 2] <- b[[i]]
-    new[i,17] <- a[i]
-  }
+  ## Get the data label
+  a <- trimws(substr(a, 1, regexpr-1))
+  a <- strsplit(a, "/")
+  label <- sapply(a, function(e) e[length(e)])
 
-  old <- read.csv(oldmap, header = TRUE)
-  old <- old[1:4]
+  ## Get the sub-dirs
+  a <- sapply(a, function(e) e[-length(e)])
+  newmap <- sapply(1:9, function(e) sapply(a, "[", e))
 
-  map <- merge(old, new, all.y = TRUE, by.x = "phv", by.y = "phv")
-
+  ## Create the new map
+  newmap <- data.frame(cbind(phv, label, newmap, pathways), stringsAsFactors = FALSE)
+  map <- merge(map[,1:5], newmap, by.x = "phv", by.y = 1, all = FALSE)
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
-
-  setwd(wd)
 }
-
