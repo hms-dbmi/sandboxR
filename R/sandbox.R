@@ -12,6 +12,8 @@
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
 #' @import parallel
+#' @import XML
+#' @import RCurl
 
 sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_name = phs)  {
 
@@ -35,6 +37,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
                      (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
 
   mcl <- parallel::mclapply(temp, function(e) {
+    message(e)
     xmllist <- XML::xmlToList(RCurl::getURLContent(paste0(phenodir, e)))
     pht <- strsplit(xmllist[[".attrs"]][["id"]], "\\.")[[1]][1]
     dt_sn <- substr(e, regexpr(pht, e) + nchar(pht)+4, regexpr(".data_dict", e)-1)
@@ -48,7 +51,8 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
 
     return(l)
 
-  }, mc.cores = getOption("mc.cores", detectCores()))
+  }, mc.cores = getOption("mc.cores", parallel::detectCores()))
+
 
   # write the first map
   map <- data.table::rbindlist(mcl)[,c(4,1,2,6,5,6,3)]
@@ -84,7 +88,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
          write.csv(df, file = filepath, row.names = FALSE)
         }
       }
-    }, mc.cores = getOption("mc.cores", detectCores()))
+    }, mc.cores = getOption("mc.cores", parallel::detectCores()))
   }
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
 }

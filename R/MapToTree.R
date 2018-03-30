@@ -1,48 +1,39 @@
 #' @title Change the structure of your tree folder using your mapping file
-#'
 #' @param mappath Pathway to the folder where your mapping file and your tree are located
-#'
 #' @return Move and rename the files in the tree folder according to your mapping file
-#'
-#'
 #' @author Gregoire Versmee, Laura Versmee
-
 #' @export
-
+#' @import parallel
 
 MapToTree <- function(mappath)  {
 
-wd <- getwd()
+  ## Read and save the old map
+  map <- read.csv(paste0(mappath, "/0_map.csv"), stringsAsFactors = FALSE, na.strings = "")
+  write.csv(map, paste0(mappath, "/.oldmaps/map_", format(Sys.time(), format = "%Y-%m-%d_%H%M_%Z"), ".csv"), row.names = FALSE, na ="")
 
-## Find the old pathways
-map <- read.csv(paste0(mappath, "/0_map.csv"), stringsAsFactors = FALSE, na.strings = "")
+  ## Get the actual paths
+  treepath <- list.dirs(mappath, recursive = FALSE)
+  treepath <- treepath[grepl("_tree", treepath)]
+  a <- list.files(treepath, full.names = TRUE, recursive = TRUE)
+  regexpr <- regexpr("phv", a)
+  a <- cbind(substr(a, regexpr, nchar(a)-4), a)
 
-foo <- grepl("_tree", list.dirs(mappath, recursive = FALSE, full.names = FALSE))
-treepath <- list.dirs(mappath, recursive = FALSE)[foo]
-setwd(treepath)
+  ## Get the new paths
+  newpath <- cbind(map[,1],
+                   paste0(treepath, "/",
+                            apply(map[,7:15], 1, function(e) gsub("/NA", "", paste0(e, collapse = "/")))),
+                   paste0(map[,6], " ",  map[,1], ".csv"))
 
-for (i in 1:nrow(map))  {
-  newpath <- treepath
-  for (j in 6:19)  {
-    if (is.na(map[i,j])) break
-    else {
-      newpath <- paste0(newpath, "/", gsub("/", "|", map[i,j]))
-      if (dir.exists(newpath) == FALSE)  dir.create(newpath)
-    }
-  }
-  newpath <- paste0(newpath, "/", gsub("/", "|", map[i,5]), " ", map[i,1], ".csv")
-  if (gsub(paste0(treepath, "/"), "", newpath) != map[i,20])  {
-    file.copy(paste0(treepath, "/", map[i, 20]), newpath)
-    file.remove(paste0(treepath, map[i,20]))
-    map[i, 20] <- as.character(gsub(paste0(treepath, "/"), "", newpath))
-  }
-}
+  merge <- merge(a, newpath, by.x = 1, by.y =1)
+  merge <- as.matrix(merge)
 
-## Remove empty directories in the tree
-system("find . -empty -type d -delete")
+  ## Create the new dirs
+  parallel::mclapply(merge[,3], dir.create, showWarnings = FALSE, recursive = TRUE, mc.cores = getOption("mc.cores", parallel::detectCores()))
 
-write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
+  ## rename the files
+  parallel::mclapply(1:nrow(merge), function(e) file.rename(merge[e,2], paste0(merge[e,3], "/", merge[e,4])), mc.cores = getOption("mc.cores", parallel::detectCores()))
 
-setwd(wd)
-
+  ## Remove empty directories in the tree
+  system(paste("find", treepath, "-name .DS_Store -type f -delete"))
+  system(paste("find", treepath, "-empty -type d -delete"))
 }
