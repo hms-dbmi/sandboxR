@@ -39,7 +39,7 @@ TreeToMap <- function(mappath)  {
   newmap <- sapply(1:9, function(e) sapply(a, "[", e))
 
   ## Create the new map
-  newmap <- data.frame(cbind(phv, label, newmap, pathways), stringsAsFactors = FALSE)
+  newmap <- data.frame(cbind(phv, label, newmap, pathways), stringsAsFactors = FALSE, row.names = NULL)
   map <- merge(map[,1:5], newmap, by.x = "phv", by.y = 1, all = FALSE)
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
 }
