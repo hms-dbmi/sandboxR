@@ -11,80 +11,87 @@
 #'
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
+#' @import parallel
+#' @import XML
+#' @import RCurl
 
 sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_name = phs)  {
 
   ## set some pathways
-  wd <- getwd()
   mappath <- paste0(tree_dest, "/", study_name, "_map")
   treepath <- paste0(mappath, "/", study_name, "_tree")
   dir.create(mappath, showWarnings = FALSE)
   dir.create(treepath, showWarnings = FALSE)
 
-  ##Write the first map
   dir.create(paste0(mappath, "/.oldmaps"), showWarnings = FALSE)
-  map <- data.frame(matrix(ncol = 20))
-  count <- 1
-  cnames <- c("phv", "study_name", "var_desc", "var_study_name",  "data_label", paste0("sd",1:14), "pathway")
-  colnames(map) <- cnames
 
-  #read datatablesdict and variablesidct
-  datatablesdict <- datatables.dict(phs)
-  variablesdict <- variables.dict(phs)
+  phs <- phs.version(phs)
+
+
+  #selecting all xml files except for "Subject", "Sample", "Pedigree", and phenotypics data from substudies
+  url<- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/")
+
+  # create the map frame
+  filenames <- strsplit(RCurl::getURL(url, ftp.use.epsv = TRUE, dirlistonly = TRUE), "\n")[[1]]
+  phenodir <- paste0(url, filenames[grep("pheno", filenames)], "/")
+  filelist <- strsplit(RCurl::getURL(phenodir, ftp.use.epsv = FALSE, dirlistonly = TRUE), "\n")[[1]]
+  temp <- filelist[(grepl(".data_dict.xml", filelist)) & (!grepl("Sample_Attributes.data_dict.xml", filelist)) &
+                     (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
+
+  mcl <- parallel::mclapply(temp, function(e) {
+    message(e)
+    xmllist <- XML::xmlToList(RCurl::getURLContent(paste0(phenodir, e)))
+    pht <- strsplit(xmllist[[".attrs"]][["id"]], "\\.")[[1]][1]
+    dt_sn <- substr(e, regexpr(pht, e) + nchar(pht)+4, regexpr(".data_dict", e)-1)
+    st_desc <- xmllist[["description"]]
+    if (is.null(st_desc)) st_desc <- dt_sn
+    if (nchar(as.character(st_desc)) > 255)  st_desc <- substr(st_desc, 1, 255)
+    dir.create(paste0(treepath, "/", st_desc), recursive = TRUE, showWarnings = FALSE)
+    xmllist <- xmllist[names(xmllist) == "variable"][-1]
+    l <- cbind(phv = sapply(xmllist, "[", ".attrs", USE.NAMES = FALSE), var_name = sapply(xmllist, "[", "name", USE.NAMES = FALSE), var_desc = sapply(xmllist, "[", "description", USE.NAMES = FALSE))
+    l <- data.frame(cbind(pht = pht, dt_sn = dt_sn, st_desc = st_desc, l))
+
+    return(l)
+
+  }, mc.cores = getOption("mc.cores", parallel::detectCores()))
+
+
+  # write the first map
+  map <- data.table::rbindlist(mcl)[,c(4,1,2,6,5,6,3)]
+  map <- data.frame(apply(map,2, as.character))
+  map[,6] <- substr(map[,4], 1, 230)
+  map[,8:15] <- NA
+  map[,16] <- paste0(gsub("/", "|", map[,7]), "/", gsub("/", "|", map[,6]), " ", map[,1], ".csv")
+  colnames(map) <- c("phv", "pht", "study_name", "var_desc", "var_study_name", "data_label", paste0("sd",1:9), "pathway")
 
   ## For each consent groups
   for (i in 1:length(consent_groups))  {
+    g <- list.files(path = consent_groups[i], pattern = ".txt.gz", recursive = TRUE, full.names = TRUE)
+    g <- g[(!grepl("Sample_Attributes", g)) & (!grepl("MULTI.txt.gz", g))]
 
-    ## List the text files with the variables data
-    setwd(consent_groups[i])
-    temp <- list.files(pattern = ".txt", recursive = TRUE)
-    ind <- grepl("MULTI.txt", temp)
-    g <- temp[!ind]
+    parallel::mclapply(g, function(e) {
+      message(e)
+      v <- read.csv(file = e, header = TRUE, sep = "\t", comment.char = "#")
+      if (ncol(v) > 2) {
+        g_pht <- regexpr("pht", e)
+        g_pht <- substr(e, g_pht, g_pht+8)
+        listmcl <- map[map[,2] == g_pht,]
 
-    # extract the datatables characteristics from the datatablesdict
-    for (j in 1:length(g))  {
-      v <- read.csv(file = g[j], header = TRUE, sep = "\t", comment.char = "#")
-      if (ncol(v) < 2) next
-      st_name <- (strsplit(g[j],"\\."))[[1]]
-      st_name <- st_name[length(st_name)-3]
-      inddt <- which(datatablesdict[2] == st_name)
-      pht <- as.character(datatablesdict[inddt, 1])
-      st_desc <- as.character(datatablesdict[inddt, 3])
-      if (is.null(st_desc))  st_desc <- st_name
-      if (nchar(as.character(st_desc)) > 255)  st_desc <- substr(st_desc, 1, 255)
-      if (dir.exists(paste0(treepath, "/", st_desc)) == FALSE)  dir.create(paste0(treepath, "/", st_desc), recursive = TRUE)
+        # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable
+        for (j in 3:ncol(v))  {
+         df <- v[,c(1,j)]
+         filepath <- paste0(treepath, "/", listmcl[j-2, 16])
 
-      # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable
-      for (k in 3:ncol(v))  {
-        namefile <- names(v[k])
-        c <- c(1,k)
-        output <- data.frame(v[c])
-        indvart <- which((variablesdict[2] == st_name) & (variablesdict[3] == names(output[2])))
-        phv <- variablesdict[indvart,1]
-        data_label <- variablesdict[indvart,4]
-        if (nchar(as.character(data_label)) > 230)  data_label <- substr(data_label, 1, 230)
-        filepath <- paste0(treepath,"/", gsub("/", "|", st_desc), "/", gsub("/", "|", data_label), " ", phv, ".csv")
-        map[count,1] <- as.character(phv)
-        map[count,2] <- st_name
-        map[count,3] <- as.character(data_label)
-        map[count,4] <- namefile
-        map[count,5] <- as.character(data_label)
-        map[count,6] <- st_desc
-        map[count,20] <- paste0("/", gsub("/", "|", st_desc), "/", gsub("/", "|", data_label), " ", phv, ".csv")
-        count <- count + 1
 
-        ## Append to an existing file (multiple consent groups)
-        if (file.exists(filepath)) {
-          output2 <- read.csv(file = filepath, header = TRUE)
-          output <- rbind(output, output2)
-          output <- unique(output)
+         if (file.exists(filepath)) {
+           output <- read.csv(file = filepath, header = TRUE, stringsAsFactors = FALSE)
+           df <- rbind(output, df)
+           df <- unique(df)
+         }
+         write.csv(df, file = filepath, row.names = FALSE)
         }
-        write.csv(output, file = filepath, row.names = FALSE)
       }
-    }
+    }, mc.cores = getOption("mc.cores", parallel::detectCores()))
   }
-  map <- unique(map)
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
-
-  setwd(wd)
 }

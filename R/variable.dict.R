@@ -7,71 +7,41 @@
 #' @description This function extracts informations from data.dict.xml files from the dbgap ftp server to create a variable dictionnary.
 #' @import XML
 #' @import RCurl
+#' @import parallel
+#' @import data.table
 #'
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
 
-
 variables.dict <-function (phs)  {
-
-  wd <- getwd()
 
   phs <- phs.version(phs)
 
   #selecting all xml files except for "Subject", "Sample", "Pedigree", and phenotypics data from substudies
-  url<- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/")
+  url<- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/")
 
-  filenames <- getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
-  filenames <- paste(url, strsplit(filenames, "\r*\n")[[1]], sep = "")
-  filenames2 <- getURL(paste0(filenames[length(filenames)], "/"), ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
-  filenames2 <- paste(filenames[length(filenames)], "/", strsplit(filenames2, "\r*\n")[[1]], sep = "")
-  ind <- grepl("pheno", filenames2)
-  phenodir <- filenames2[ind]
-  filelist <- getURL(paste0(phenodir, "/"), ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
-  filelist <- paste(phenodir, "/", strsplit(filelist, "\r*\n")[[1]], sep = "")
-  ind <- (grepl(".data_dict.xml", filelist)) & (!grepl("henotypes.data_dict.xml", filelist)) & (!grepl("ample_Attributes.data_dict.xml", filelist)) &
-    (!grepl("Subject.data_dict", filelist)) & (!grepl("Sample.data_dict", filelist)) & (!grepl("Pedigree.data_dict", filelist))
-  temp <- filelist[ind]
+  filenames <- strsplit(RCurl::getURL(url, ftp.use.epsv = TRUE, dirlistonly = TRUE), "\n")[[1]]
+  phenodir <- paste0(url, filenames[grep("pheno", filenames)], "/")
+  filelist <- strsplit(RCurl::getURL(phenodir, ftp.use.epsv = FALSE, dirlistonly = TRUE), "\n")[[1]]
+  temp <- filelist[(grepl(".data_dict.xml", filelist)) & (!grepl("Sample_Attributes.data_dict.xml", filelist)) &
+                     (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
 
-  #Create the data.frame
-  variablesdict <- data.frame()
+  mcl <- parallel::mclapply(temp, function(e) {
+    xmllist <- XML::xmlToList(RCurl::getURLContent(paste0(phenodir, e)))
+    dt_name <- xmllist[[".attrs"]][["id"]]
+    dt_sn <- substr(e, regexpr(dt_name, e) + nchar(dt_name)+1, regexpr(".data_dict", e)-1)
+    xmllist <- xmllist[names(xmllist) == "variable"]
+    df <- cbind(as.character(sapply(xmllist, "[", ".attrs")), as.character(sapply(xmllist, "[", "name")), as.character(sapply(xmllist, "[", "description")))
+    df <- data.frame(cbind(dt_sn, df))
+
+    return(df)
+
+  }, mc.cores = getOption("mc.cores", detectCores()))
+
+  table <- data.table::rbindlist(mcl)
 
   #Create column names
-  cnamesvt <- c("phv", "dt_study_name", "var_name", "var_desc")
+  colnames(table) <- c("dt_study_name", "phv", "var_name", "var_desc")
 
-  #Looping!!
-  for (i in 1:length(temp))  {
-
-    #Extract xml
-    vt <- data.frame()
-    xmllist <- XML::xmlToList(RCurl::getURLContent(temp[i]))
-    xmlfile <- XML::xmlParse(RCurl::getURLContent(temp[i]))
-    xmltop <- XML::xmlRoot(xmlfile)
-
-    #Get dt dbgap name + version + study name
-    dt_name <- xmllist[[".attrs"]][["id"]]
-    dt_sn <- substr(temp[i], regexpr(dt_name, temp[i]) + nchar(dt_name)+1, regexpr(".data_dict", temp[i])-1)
-
-    #Create vt
-    for (j in 2:XML::xmlSize(xmltop))  {
-      if (XML::xmlName(xmltop[[j]]) == "variable") {
-        vt[j,1] <- xmllist[[j]]$.attrs
-        vt[j,2] <- dt_sn
-        vt[j,3] <- xmllist[[j]]$name
-        vt[j,4] <- xmllist[[j]]$description
-      }
-    }
-
-    #Append to the final tables
-    colnames(vt) <- cnamesvt
-    variablesdict <- rbind(variablesdict, vt)
-  }
-
-  ## Remove empty rows
-  emrow <- apply(variablesdict, 1, function(x) all(is.na(x)))
-  variablesdict <- variablesdict[!emrow, ]
-
-  return(variablesdict)
-
-  setwd(wd)
+  return(table)
 }
