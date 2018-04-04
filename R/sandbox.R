@@ -22,9 +22,11 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
   treepath <- paste0(mappath, "/", study_name, "_tree")
   dir.create(mappath, showWarnings = FALSE)
   dir.create(treepath, showWarnings = FALSE)
+
   dir.create(paste0(mappath, "/.oldmaps"), showWarnings = FALSE)
 
   phs <- phs.version(phs)
+
 
   #selecting all xml files except for "Subject", "Sample", "Pedigree", and phenotypics data from substudies
   url<- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/")
@@ -79,6 +81,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
         for (j in 3:ncol(v))  {
          df <- v[,c(1,j)]
          filepath <- paste0(treepath, "/", listmcl[j-2, 16])
+
 
          if (file.exists(filepath)) {
            output <- read.csv(file = filepath, header = TRUE, stringsAsFactors = FALSE)
