@@ -57,12 +57,11 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
 
 
   # write the first map
-  map <- data.table::rbindlist(mcl)[,c(4,1,2,6,5,6,3)]
+  map <- data.table::rbindlist(mcl)[,c(4,1,2,6,5,1,6,3)]
   map <- data.frame(apply(map,2, as.character))
-  map[,6] <- substr(map[,4], 1, 230)
-  map[,8:15] <- NA
-  map[,16] <- paste0(gsub("/", "|", map[,7]), "/", gsub("/", "|", map[,6]), " ", map[,1], ".csv")
-  colnames(map) <- c("phv", "pht", "study_name", "var_desc", "var_study_name", "data_label", paste0("sd",1:9), "pathway")
+  map[,7] <- substr(map[,4], 1, 230)
+  map[,c(6,9:16)] <- NA
+  colnames(map) <- c("phv", "pht", "study_name", "var_desc", "var_study_name", "num_or_char", "data_label", paste0("sd",1:9))
 
   ## For each consent groups
   for (i in 1:length(consent_groups))  {
@@ -70,28 +69,28 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
     g <- g[(!grepl("Sample_Attributes", g)) & (!grepl("MULTI.txt.gz", g))]
 
     parallel::mclapply(g, function(e) {
-      message(e)
       v <- read.csv(file = e, header = TRUE, sep = "\t", comment.char = "#")
       if (ncol(v) > 2) {
         g_pht <- regexpr("pht", e)
         g_pht <- substr(e, g_pht, g_pht+8)
         listmcl <- map[map[,2] == g_pht,]
 
-        # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable
+        # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable (with phv name)
         for (j in 3:ncol(v))  {
-         df <- v[,c(1,j)]
-         filepath <- paste0(treepath, "/", listmcl[j-2, 16])
-
-
-         if (file.exists(filepath)) {
-           output <- read.csv(file = filepath, header = TRUE, stringsAsFactors = FALSE)
-           df <- rbind(output, df)
-           df <- unique(df)
-         }
-         write.csv(df, file = filepath, row.names = FALSE)
+         df <- v[!is.na(v[,j]),c(1,j)]
+         colnames(df) <- c("dbGaP_ID", as.character(listmcl[j-2, 1]))
+         filepath <- paste0(treepath, "/", gsub("/", "|", listmcl[j-2,8]), "/", gsub("/", "|", listmcl[j-2,7]), " ", listmcl[j-2,1], ".csv")
+         write.csv(df, file = filepath, row.names = FALSE, append = TRUE)
         }
       }
     }, mc.cores = getOption("mc.cores", parallel::detectCores()))
   }
+
+  ## remove the phv part of the title if possible
+  lapply(list.files(mappath, recursive = TRUE, full.names = TRUE), function(e) {
+    to <- paste0(substr(e, 1, regexpr(" phv", e) -1), ".csv")
+    if (!file.exists(to))  file.rename(e, to)
+  })
+
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
 }

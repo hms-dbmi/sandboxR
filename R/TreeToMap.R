@@ -22,24 +22,21 @@ TreeToMap <- function(mappath)  {
   treepath <- list.dirs(mappath, recursive = FALSE, full.names = TRUE)
   treepath <- treepath[grepl("_tree", treepath)]
   a <- list.files(treepath, full.names = TRUE, recursive = TRUE)
-  a <- trimws(sub(paste0(treepath, "/") ,"", a))
-  pathways <- a
 
-  ## Get the phv
-  regexpr <- regexpr("phv", a)
-  phv <- substr(a, regexpr, nchar(a)-4)
+  a <- parallel::mclapply(list.files(treepath, full.names = TRUE, recursive = TRUE), function(e) {
+    return(c(colnames(read.csv(e))[2], substr(e, 1, nchar(e)-4)))
+  }, mc.cores = getOption("mc.cores", parallel::detectCores()))
 
-  ## Get the data label
-  a <- trimws(substr(a, 1, regexpr-1))
-  a <- strsplit(a, "/")
-  label <- sapply(a, function(e) e[length(e)])
+  phv <- sapply(a, "[", 1)
+  b <- sapply(a, "[", 2)
+  label <- basename(b)
 
   ## Get the sub-dirs
-  a <- sapply(a, function(e) e[-length(e)])
-  newmap <- sapply(1:9, function(e) sapply(a, "[", e))
+  newmap <- sapply(1:9, function(e) sapply(strsplit(sub(paste0(treepath, "/"), "", dirname(b)), "/"), "[", e))
 
   ## Create the new map
-  newmap <- data.frame(cbind(phv, label, newmap, pathways), stringsAsFactors = FALSE, row.names = NULL)
-  map <- merge(map[,1:5], newmap, by.x = "phv", by.y = 1, all = FALSE)
+  newmap <- data.frame(cbind(phv, label, newmap), stringsAsFactors = FALSE, row.names = NULL)
+  map <- merge(map[,1:6], newmap, by.x = "phv", by.y = 1, all = FALSE)
+  colnames(map) <- c("phv", "pht", "study_name", "var_desc", "var_study_name", "num_or_char", "data_label", paste0("sd",1:9))
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
 }
