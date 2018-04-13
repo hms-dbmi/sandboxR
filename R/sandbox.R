@@ -38,7 +38,7 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
   temp <- filelist[(grepl(".data_dict.xml", filelist)) & (!grepl("Sample_Attributes.data_dict.xml", filelist)) &
                      (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
 
-  mcl <- parallel::mclapply(temp, function(e) {
+  mcl <- lapply(temp, function(e) {
     message(e)
     xmllist <- XML::xmlToList(RCurl::getURLContent(paste0(phenodir, e)))
     pht <- strsplit(xmllist[[".attrs"]][["id"]], "\\.")[[1]][1]
@@ -49,42 +49,41 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
     dir.create(paste0(treepath, "/", st_desc), recursive = TRUE, showWarnings = FALSE)
     xmllist <- xmllist[names(xmllist) == "variable"][-1]
     l <- cbind(phv = sapply(xmllist, "[", ".attrs", USE.NAMES = FALSE), var_name = sapply(xmllist, "[", "name", USE.NAMES = FALSE), var_desc = sapply(xmllist, "[", "description", USE.NAMES = FALSE))
-    l <- data.frame(cbind(pht = pht, dt_sn = dt_sn, st_desc = st_desc, l))
-
-    return(l)
-
-  }, mc.cores = getOption("mc.cores", parallel::detectCores()))
-
+    return(data.frame(cbind(pht = pht, dt_sn = dt_sn, st_desc = st_desc, l)))
+  })
 
   # write the first map
   map <- data.table::rbindlist(mcl)[,c(4,1,2,6,5,1,6,3)]
   map <- data.frame(apply(map,2, as.character))
   map[,7] <- substr(map[,4], 1, 230)
   map[,c(6,9:16)] <- NA
-  colnames(map) <- c("phv", "pht", "study_name", "var_desc", "var_study_name", "num_or_char", "data_label", paste0("sd",1:9))
+  colnames(map) <- c("phv", "pht", "study_name", "var_desc", "var_study_name", "code", "data_label", paste0("sd",1:9))
 
   ## For each consent groups
-  for (i in 1:length(consent_groups))  {
-    g <- list.files(path = consent_groups[i], pattern = ".txt.gz", recursive = TRUE, full.names = TRUE)
-    g <- g[(!grepl("Sample_Attributes", g)) & (!grepl("MULTI.txt.gz", g))]
+  g <- as.character(sapply(consent_groups, list.files, pattern = ".txt.gz", recursive = TRUE, full.names = TRUE))
+  g <- g[(!grepl("Sample_Attributes", g)) & (!grepl("MULTI.txt.gz", g))]
 
-    parallel::mclapply(g, function(e) {
-      v <- read.csv(file = e, header = TRUE, sep = "\t", comment.char = "#")
-      if (ncol(v) > 2) {
-        g_pht <- regexpr("pht", e)
-        g_pht <- substr(e, g_pht, g_pht+8)
-        listmcl <- map[map[,2] == g_pht,]
+  ## copy the files to a hidden folder
+  dir.create(paste0(mappath, "/.files"), showWarnings = FALSE)
+  file.copy(g, paste0(mappath, "/.files/", basename(g)))
 
-        # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable (with phv name)
-        for (j in 3:ncol(v))  {
-         df <- v[!is.na(v[,j]),c(1,j)]
-         colnames(df) <- c("dbGaP_ID", as.character(listmcl[j-2, 1]))
-         filepath <- paste0(treepath, "/", gsub("/", "|", listmcl[j-2,8]), "/", gsub("/", "|", listmcl[j-2,7]), " ", listmcl[j-2,1], ".csv")
-         write.csv(df, file = filepath, row.names = FALSE, append = TRUE)
-        }
+  lapply(g, function(e) {
+    v <- read.csv(file = e, header = TRUE, sep = "\t", comment.char = "#", na.strings = "")
+    if (ncol(v) > 2) {
+      g_pht <- regexpr("pht", e)
+      g_pht <- substr(e, g_pht, g_pht+8)
+      listmcl <- map[map[,2] == g_pht,]
+
+      # make 1 csv file per variable, with 1st col = dbgapID, 2nd col = variable (with phv name)
+      for (j in 3:ncol(v))  {
+       df <- v[!(is.na(v[,j]) | v[,j] == "NA"),c(1,j)]
+       colnames(df) <- c("dbGaP_ID", as.character(listmcl[j-2, 1]))
+       filepath <- paste0(treepath, "/", gsub("/", "|", listmcl[j-2,8]), "/", gsub("/", "|", listmcl[j-2,7]), " ", listmcl[j-2,1], ".csv")
+       if (!file.exists(filepath))  write.csv(df, filepath, row.names = FALSE)
+       else write.csv(rbind(read.csv(filepath, stringsAsFactors = FALSE), df), filepath, row.names = FALSE)
       }
-    }, mc.cores = getOption("mc.cores", parallel::detectCores()))
-  }
+    }
+  })
 
   ## remove the phv part of the title if possible
   lapply(list.files(mappath, recursive = TRUE, full.names = TRUE), function(e) {
@@ -94,3 +93,4 @@ sandbox <- function(phs, consent_groups, tree_dest = consent_groups[1], study_na
 
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
 }
+
