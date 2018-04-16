@@ -4,7 +4,7 @@
 \alias{dbgap.decrypt}
 \title{Decrypt ncbi_enc files}
 \usage{
-dbgap.decrypt(file, key)
+dbgap.decrypt(file)
 }
 \arguments{
 \item{file}{file or folder where your encrypted files are located}

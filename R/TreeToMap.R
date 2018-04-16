@@ -16,7 +16,7 @@ TreeToMap <- function(mappath)  {
   write.csv(map, paste0(mappath, "/.oldmaps/map_", format(Sys.time(), format = "%Y-%m-%d_%H%M_%Z"), ".csv"), row.names = FALSE, na ="")
 
   ## Remove empty directories
-  system(paste("find", treepath, "-name .DS_Store -type f -delete"))
+  system(paste("find", mappath, "-name .DS_Store -type f -delete"))
   system(paste("find", mappath,"-empty -type d -delete"))
 
   ## Get the pathways for each file in the tree
