@@ -8,13 +8,15 @@
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
 
-  dbgap.decrypt <- function(file)  {
+  dbgap.decrypt <- function(file, key = FALSE)  {
 
+    if (key == FALSE) {
     message("Where is your key?")
     key <- file.choose()
+    }
 
     ## escape regex symbols
-    file <- gsub(" ", "\\\\ ", file)
+    #file <- gsub(" ", "\\\\ ", file)
     key <- gsub(" ", "\\\\ ", key)
 
     wd <- getwd()
@@ -35,19 +37,20 @@
     repo <- as.character(p[which(grepl("root", p[ ,1])), 3])
     setwd(repo)
 
+    file2 <- list.files(file, recursive = TRUE, full.names = TRUE)
+    file2<- gsub(" ", "\\\\ ", file2)
+
     # decrypt the files
-    g <- system(paste0(wd, "/sratoolkit.2.8.2-1-mac64/bin/vdb-decrypt ", file))
+    parallel::mclapply(file2, function(e){
+    system2(paste0(wd, "/sratoolkit.2.8.2-1-mac64/bin/vdb-decrypt"), e)
+    }, mc.cores = getOption("mc.cores", parallel::detectCores()))
 
     #clean up your mess!
     setwd(wd)
-    file.remove(repo)
+    suppressWarnings(file.remove(repo))
     sra <- list.files(pattern = "sratoolkit*")
     system(paste0("rm -r ./", sra))
   }
-
-
-
-
 
 
 #    ## file paths cleaning and quoting

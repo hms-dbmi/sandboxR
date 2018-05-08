@@ -16,9 +16,6 @@ browse.study <- function(phs, jupyter = FALSE)  {
   gapexchange <- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/", "GapExchange_", phs, ".xml")
   xmllist <- XML::xmlToList(RCurl::getURLContent(gapexchange))
   url <- xmllist[["Studies"]][["Study"]][["Configuration"]][["StudyURLs"]][["Url"]][["url"]]
-  browseURL(url)
 
-  if (jupyter == FALSE)  browseURL(url)  else  return(url)
-
+  if (jupyter)  return(url)  else   browseURL(url)
 }
-

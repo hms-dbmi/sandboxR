@@ -12,10 +12,8 @@
 
 browse.dbgap <- function(phs, jupyter = FALSE)  {
 
-  phs <- phs.version(phs)
-  url <- paste0("https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=", phs)
+  url <- paste0("https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=", phs.version(phs))
 
-  if (jupyter == FALSE)  browseURL(url)
-  if (jupyter)  return(url)
+  if (jupyter)  browseURL(url)  else return(url)
 }
 
