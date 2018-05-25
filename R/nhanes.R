@@ -37,6 +37,8 @@ dl.nhanes <- function(destination = getwd()) {
   destination <- paste0(destination, "/NHANES_tables_per_questionnaire")
   dir.create(destination, showWarnings = FALSE)
 
+  options(jupyter.display_mimetypes = NULL)
+
   parallel::mcmapply(function(e,f) {
     data.table::fwrite(e, paste0(destination, "/", f, ".csv"))
   }, test2, names(test2), mc.cores = ncores)
