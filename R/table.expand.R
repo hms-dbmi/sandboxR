@@ -50,7 +50,6 @@ table.expand <- function(study_name, files, destination = getwd())  {
   names(mcl) <- sub(".csv", "", basename(g))
 
   mcl <- Reduce(function(x, name) {
-    message(name)
     y <- mcl[[name]]
     dups <- c()
     for (j in 2:ncol(y)) {
