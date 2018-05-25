@@ -15,7 +15,7 @@
 #' @import rlist
 #' @import RCurl
 
-table.expand <- function(study_name, files, destination)  {
+table.expand <- function(study_name, files, destination = getwd())  {
 
   ### set some pathways
   ## Create the destination folder
