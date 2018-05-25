@@ -1,5 +1,9 @@
 #' @author Gregoire Versmee, Laura Versmee
-#' @export
+#'
+#' @title nhanes
+
+#' @export dl.nhanes
+#'
 #' @import parallel
 #' @import nhanesA
 #' @import data.table
