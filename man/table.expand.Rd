@@ -4,7 +4,7 @@
 \alias{table.expand}
 \title{De-aggregate the variable in the datatables and create the first mapping file}
 \usage{
-table.expand(study_name, files, destination)
+table.expand(study_name, files, destination = getwd())
 }
 \arguments{
 \item{study_name}{Nickname used for this study}

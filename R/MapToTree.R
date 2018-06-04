@@ -23,8 +23,8 @@ MapToTree <- function(mappath)  {
   ## Get the new paths
   newpath <- cbind(map[,1],
                    paste0(treepath, "/",
-                            apply(map[,8:16], 1, function(e) gsub("/NA", "", paste0(e, collapse = "/")))),
-                   paste0(map[,7], " ",  map[,1], ".csv"))
+                            apply(map[,7:15], 1, function(e) gsub("/NA", "", paste0(e, collapse = "/")))),
+                   paste0(map[,6], " ",  map[,1], ".csv"))
 
   merge <- merge(a, newpath, by.x = 1, by.y =1)
   merge <- as.matrix(merge)
@@ -38,7 +38,7 @@ MapToTree <- function(mappath)  {
     }, mc.cores = getOption("mc.cores", parallel::detectCores()))
 
   ## remove the phv part of the title if possible
-  lapply(list.files(mappath, recursive = TRUE, full.names = TRUE), function(e) {
+  lapply(list.files(treepath, recursive = TRUE, full.names = TRUE), function(e) {
     to <- paste0(substr(e, 1, regexpr(" phv", e) -1), ".csv")
     if (!file.exists(to))  file.rename(e, to)
   })

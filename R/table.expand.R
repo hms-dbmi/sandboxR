@@ -50,6 +50,7 @@ table.expand <- function(study_name, files, destination = getwd())  {
   names(mcl) <- sub(".csv", "", basename(g))
 
   mcl <- Reduce(function(x, name) {
+    message(name)
     y <- mcl[[name]]
     dups <- c()
     for (j in 2:ncol(y)) {
@@ -82,15 +83,14 @@ table.expand <- function(study_name, files, destination = getwd())  {
 
   #### nead to deal with duplicates
   parallel::mcmapply(function(e, f) {
-    class(f)
     f <- f[, ENCOUNTER := seq_len(.N), by = c(colnames(f)[1])]
     dir.create(e, showWarnings = FALSE)
 
     lapply(2:(length(colnames(f))-1), function(x) {
 
-      test <- data.table(cbind(f[,1], f[,..x], f[,"ENCOUNTER"]))
+      test <- data.table::data.table(cbind(f[,1], f[,..x], f[,"ENCOUNTER"]))
       test <- na.omit(test, 2)
-      fwrite(test, paste0(e, colnames(f)[x], ".csv"))
+      data.table::fwrite(test, paste0(e, colnames(f)[x], ".csv"))
     })
 
   }, paste0(treepath, "/", names(mcl), "/"), mcl, mc.cores = ncores)

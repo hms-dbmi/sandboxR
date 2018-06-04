@@ -37,7 +37,8 @@ TreeToMap <- function(mappath)  {
 
   ## Create the new map
   newmap <- data.frame(cbind(phv, label, newmap), stringsAsFactors = FALSE, row.names = NULL)
-  map <- merge(map[,1:6], newmap, by.x = "phv", by.y = 1, all = FALSE)
-  colnames(map) <- c("phv", "pht", "study_name", "var_desc", "var_study_name", "num_or_char", "data_label", paste0("sd",1:9))
+  map <- merge(map[,1:5], newmap, by.x = 1, by.y = 1, all = FALSE)
+  colnames(map) <- c("variable_id", "questionnaire_id", "variable_original_name", "num_or_char", "code_key", "data_label", paste0("sd",1:9))
+  map <- map[with(map, order(sd1, sd2, sd3, sd4, sd5, sd6, sd7, sd8, sd9, data_label)),]
   write.csv(map, paste0(mappath, "/0_map.csv"), row.names = FALSE, na = "")
 }

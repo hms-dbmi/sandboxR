@@ -43,7 +43,7 @@ dbgap.expand <- function(phs, files, destination, study_name = phs)  {
   phenodir <- paste0(url, filenames[grep("pheno", filenames)], "/")
   filelist <- strsplit(RCurl::getURL(phenodir, ftp.use.epsv = FALSE, dirlistonly = TRUE), "\n")[[1]]
   filelist <- filelist[(grepl(".data_dict.xml", filelist)) & (!grepl("Sample_Attributes.data_dict.xml", filelist)) &
-                     (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
+                     (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Subject_Images.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
 
 
   ### Get the number of cores of the instance
@@ -100,11 +100,11 @@ dbgap.expand <- function(phs, files, destination, study_name = phs)  {
   total_dict <- unlist(total_dict[sapply(total_dict, function(e) if (length(e) > 0) return(TRUE) else return(FALSE))], recursive = FALSE)
 
   ### write the first map
-  map <- data.table::rbindlist(total_var)[,c(4,1,6,7,6,3)]
+  map <- data.table::rbindlist(total_var)[,c(4,1,6,1,7,6,3)]
   map <- data.frame(apply(map,2, as.character))
-  map[,5] <- substr(map[,5], 1, 230)
-  map[,c(7:14)] <- NA
-  colnames(map) <- c("variable_id", "questionnaire_id", "variable_original_name", "code_key", "data_label", paste0("sd",1:9))
+  map[,6] <- substr(map[,6], 1, 230)
+  map[,c(4, 8:15)] <- NA
+  colnames(map) <- c("variable_id", "questionnaire_id", "variable_original_name", "num_or_char", "code_key", "data_label", paste0("sd",1:9))
 
   ### write the first dictionnary
   dict <- data.table::rbindlist(total_dict)
@@ -112,7 +112,7 @@ dbgap.expand <- function(phs, files, destination, study_name = phs)  {
   ## Get all the txt.gz files fro the given study, and the subject file
   g <- as.character(sapply(files, list.files, pattern = ".txt.gz", recursive = TRUE, full.names = TRUE))
   cgfile <- g[grepl("Subject.MULTI.txt.gz", g)][1]
-  g <- g[(!grepl("Sample_Attributes", g)) & (!grepl("MULTI.txt.gz", g))]
+  g <- g[(!grepl("Sample_Attributes", g)) & (!grepl("MULTI.txt.gz", g)) & (!grepl("Subject_Images", g))]
 
   ## copy the original files to a hidden folder
   filespath <- paste0(mappath, "/.files")
@@ -138,7 +138,7 @@ dbgap.expand <- function(phs, files, destination, study_name = phs)  {
     else {
       g_pht <- regexpr("pht", e)
       g_pht <- substr(e, g_pht, g_pht+8)
-      listmcl <- map[map[,2] == g_pht,]
+      listmcl <- map[map[,2] == g_pht,-4]
       exp <- lapply(3:nvar, expand, v=v, listmcl=listmcl)
     }
     return(unlist(exp, recursive = FALSE))
@@ -155,8 +155,18 @@ dbgap.expand <- function(phs, files, destination, study_name = phs)  {
   c <- which(rename %in% duplicated(rename) == FALSE)
   names(total_exp)[c] <- paste0(rename[c], ".csv")
 
-  ### Write the tree
-  parallel::mcmapply(data.table::fwrite, total_exp, names(total_exp), mc.cores = ncores)
+  #### nead to deal with duplicates and write the tree
+  parallel::mcmapply(function(e, f) {
+    f <- data.table::setDT(f)[, ENCOUNTER := seq_len(.N), by = c(colnames(f)[1])]
+
+    lapply(2:(length(colnames(f))-1), function(x) {
+
+      test <- data.table::data.table(cbind(f[,1], f[,..x], f[,"ENCOUNTER"]))
+      test <- na.omit(test, 2)
+      data.table::fwrite(test, e)
+    })
+
+  }, names(total_exp), total_exp, mc.cores = ncores)
 
   ## Remove empty directories in the tree
   system(paste("find", treepath, "-name .DS_Store -type f -delete"))
