@@ -145,9 +145,14 @@ dbgap.expand <- function(phs, files, destination, study_name = phs)  {
   }, mc.cores = ncores)
 
   total_exp <- unlist(unlist(total_exp, recursive = FALSE), recursive = FALSE)
+  unames <- unique(names(total_exp)
 
   ## Merge the tables by name
-  total_exp <- rlist::list.merge(total_exp)
+  total_exp <- lapply(unames), function(e) {
+    Reduce(rbind, total_exp[which(names(total_exp) == e)])
+  })
+
+  names(total_exp) <- unames
 
   ## Omit "phv" in the name if unique
   rename <- names(total_exp)
