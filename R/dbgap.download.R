@@ -47,7 +47,7 @@ dbgap.download <- function(krt, key = FALSE)  {
   # decrypt the files
   dir.create(paste0(wd, "/dbGaP_files"), showWarnings = FALSE)
   parallel::mclapply(file2, function(e){
-    system2(paste0(wd, "/sratoolkit.2.8.2-1-mac64/bin/vdb-decrypt"), e, paste0(wd, "/dbGaP_files/", sub(".ncbi_enc", "", basename(e))))
+    system(paste0(wd, "/sratoolkit.2.8.2-1-mac64/bin/vdb-decrypt ", e, " ", wd, "/dbGaP_files/", sub(".ncbi_enc", "", basename(e))))
   }, mc.cores = getOption("mc.cores", parallel::detectCores()))
   
   #clean up your mess!
