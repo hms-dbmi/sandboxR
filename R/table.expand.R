@@ -50,8 +50,6 @@ table.expand <- function(study_name, files, destination = getwd())  {
   })
   names(mcl) <- sub(".csv", "", basename(g))
 
-
-
   ### Expand the tables
   mcl2 <- Reduce(function(x, name) {
 
