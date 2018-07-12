@@ -161,7 +161,7 @@ dbgap.expand <- function(phs, files, destination, study_name = phs)  {
   names(total_exp)[c] <- paste0(rename[c], ".csv")
 
   #### nead to deal with duplicates and write the tree
-  parallel::mcmapply(function(e, f) {
+  mapply(function(e, f) {
     f <- data.table::setDT(f)[, ENCOUNTER := seq_len(.N), by = c(colnames(f)[1])]
 
     lapply(2:(length(colnames(f))-1), function(x) {
@@ -171,7 +171,7 @@ dbgap.expand <- function(phs, files, destination, study_name = phs)  {
       data.table::fwrite(test, e)
     })
 
-  }, names(total_exp), total_exp, mc.cores = ncores)
+  }, names(total_exp), total_exp)
 
   ## Remove empty directories in the tree
   system(paste("find", treepath, "-name .DS_Store -type f -delete"))

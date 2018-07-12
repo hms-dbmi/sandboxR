@@ -10,6 +10,7 @@
 #'
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
+#' @import data.table
 #' @import parallel
 #' @import XML
 #' @import rlist
@@ -49,13 +50,23 @@ table.expand <- function(study_name, files, destination = getwd())  {
   })
   names(mcl) <- sub(".csv", "", basename(g))
 
-  mcl <- Reduce(function(x, name) {
-    message(name)
+
+
+  ### Expand the tables
+  mcl2 <- Reduce(function(x, name) {
+
+    ### get the table
     y <- mcl[[name]]
+
+    ### initialize duplicated colums
     dups <- c()
+
+    ### look if a column label is a duplicate
     for (j in 2:ncol(y)) {
       duplicate <- mapply(function (e, f)  {
         d <- which(colnames(e) == colnames(y)[j])
+
+        ### if so, join the 2 columns
         if (length(d) > 0) {
           x[[f]] <- rbind(x[[f]], y[,c(1,j), with = FALSE], fill = TRUE)
           return(j)
@@ -63,26 +74,26 @@ table.expand <- function(study_name, files, destination = getwd())  {
       },x, names(x))
       dups <- c(dups, duplicate)
     }
-    dups <- as.integer(dups[!sapply(dups, is.null)])
-    if (length(dups) > 0) y <- y[,(dups) := NULL]
-    if (ncol(y) < 2) y <- NULL
-    x[[name]] <- y
+
+    dups2 <- unique(as.integer(dups[!sapply(dups, is.null)]))
+    if (length(dups2) > 0) y2 <- y[,(dups2) := NULL] else y2 <- y
+    #if (length(dups2) > 0) y2 <- y[, data.table::`:=`(dups2 = NULL)] else y2 <- y
+    if (ncol(y2) < 2) y3 <- NULL else y3 <- y2
+    x[[name]] <- y3
     return(x)
   }, names(mcl), init = list())
 
-
   ### write the first map
-  variable_id <- lapply(mcl, function(e) return(colnames(e)[-1]))
+  variable_id <- lapply(mcl2, function(e) return(colnames(e)[-1]))
   variable_id <- unlist(variable_id, use.names = TRUE)
   questionnaire_id <- names(variable_id)
 
   map <- data.frame(cbind(variable_id, questionnaire_id, variable_id, NA, NA, variable_id, questionnaire_id), row.names = NULL)
-  map[,c(7:14)] <- NA
+  map[,c(8:15)] <- NA
   colnames(map) <- c("variable_id", "questionnaire_id", "variable_original_name", "num_or_char", "code_key", "data_label", paste0("sd",1:9))
 
-
   #### nead to deal with duplicates
-  parallel::mcmapply(function(e, f) {
+  mapply(function(e, f) {
     f <- f[, ENCOUNTER := seq_len(.N), by = c(colnames(f)[1])]
     dir.create(e, showWarnings = FALSE)
 
@@ -93,7 +104,7 @@ table.expand <- function(study_name, files, destination = getwd())  {
       data.table::fwrite(test, paste0(e, colnames(f)[x], ".csv"))
     })
 
-  }, paste0(treepath, "/", names(mcl), "/"), mcl, mc.cores = ncores)
+  }, paste0(treepath, "/", names(mcl2), "/"), mcl2)
 
   ## Remove empty directories in the tree
   system(paste("find", treepath, "-name .DS_Store -type f -delete"))
