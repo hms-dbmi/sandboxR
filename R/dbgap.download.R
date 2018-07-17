@@ -9,47 +9,47 @@
 #' @export
 
 dbgap.download <- function(krt, key = FALSE)  {
-  
+
   if (key == FALSE) {
     message("Where is your key?")
     key <- file.choose()
   }
-  
+
   ## escape regex symbols
   #file <- gsub(" ", "\\\\ ", file)
   key <- gsub(" ", "\\\\ ", key)
-  
+
   wd <- getwd()
-  
+
   # DL and untar sratoolkit for mac
-  download.file("ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.8.2-1/sratoolkit.2.8.2-1-mac64.tar.gz", "./sratoolkit.2.8.2-1-mac64.tar.gz")
-  untar("./sratoolkit.2.8.2-1-mac64.tar.gz")
-  file.remove("./sratoolkit.2.8.2-1-mac64.tar.gz")
-  
+  download.file("http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.1-1/sratoolkit.2.9.1-1-mac64.tar.gz", "./sratoolkit.2.9.1-1-mac64.tar.gz")
+  untar("./sratoolkit.2.9.1-1-mac64.tar.gz")
+  file.remove("./sratoolkit.2.9.1-1-mac64.tar.gz")
+
   #Reset the sra settings
   if (file.exists("~/.ncbi/user-settings.mkfg"))  file.remove("~/.ncbi/user-settings.mkfg")
-  
+
   # import the key
-  system(paste("./sratoolkit.2.8.2-1-mac64/bin/vdb-config --import", key))
-  
+  system(paste("./sratoolkit.2.9.1-1-mac64/bin/vdb-config --import", key))
+
   #set the wd to the repository
   p <- read.table("~/.ncbi/user-settings.mkfg")
   repo <- as.character(p[which(grepl("root", p[ ,1])), 3])
   setwd(repo)
-  
+
   parallel::mclapply(krt, function(e){
-    system2(paste0(wd, "/sratoolkit.2.8.2-1-mac64/bin/prefetch"), e)
+    system2(paste0(wd, "/sratoolkit.2.9.1-1-mac64/bin/prefetch"), e)
   }, mc.cores = getOption("mc.cores", parallel::detectCores()))
-  
+
   file2 <- list.files(paste0(repo, "/files"), recursive = TRUE, full.names = TRUE)
   file2<- gsub(" ", "\\\\ ", file2)
-  
+
   # decrypt the files
   dir.create(paste0(wd, "/dbGaP_files"), showWarnings = FALSE)
   parallel::mclapply(file2, function(e){
-    system(paste0(wd, "/sratoolkit.2.8.2-1-mac64/bin/vdb-decrypt ", e, " ", wd, "/dbGaP_files/", sub(".ncbi_enc", "", basename(e))))
+    system(paste0(wd, "/sratoolkit.2.9.1-1-mac64/bin/vdb-decrypt ", e, " ", wd, "/dbGaP_files/", sub(".ncbi_enc", "", basename(e))))
   }, mc.cores = getOption("mc.cores", parallel::detectCores()))
-  
+
   #clean up your mess!
   setwd(wd)
   suppressWarnings(file.remove(repo))

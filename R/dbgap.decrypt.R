@@ -22,7 +22,7 @@
     wd <- getwd()
 
     # DL and untar sratoolkit for mac
-    download.file("ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.8.2-1/sratoolkit.2.8.2-1-mac64.tar.gz", "./sratoolkit.2.8.2-1-mac64.tar.gz")
+    download.file("http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.1-1/sratoolkit.2.9.1-1-mac64.tar.gz", "./sratoolkit.2.9.1-1-mac64.tar.gz")
     untar("./sratoolkit.2.8.2-1-mac64.tar.gz")
     file.remove("./sratoolkit.2.8.2-1-mac64.tar.gz")
 
@@ -30,7 +30,7 @@
     if (file.exists("~/.ncbi/user-settings.mkfg"))  file.remove("~/.ncbi/user-settings.mkfg")
 
     # import the key
-    system(paste("./sratoolkit.2.8.2-1-mac64/bin/vdb-config --import", key))
+    system(paste("./sratoolkit.2.9.1-1-mac64/bin/vdb-config --import", key))
 
     #set the wd to the repository
     p <- read.table("~/.ncbi/user-settings.mkfg")
@@ -42,7 +42,7 @@
 
     # decrypt the files
     parallel::mclapply(file2, function(e){
-    system2(paste0(wd, "/sratoolkit.2.8.2-1-mac64/bin/vdb-decrypt"), e)
+    system2(paste0(wd, "/sratoolkit.2.9.1-1-mac64/bin/vdb-decrypt"), e)
     }, mc.cores = getOption("mc.cores", parallel::detectCores()))
 
     #clean up your mess!
