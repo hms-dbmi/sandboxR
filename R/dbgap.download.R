@@ -27,7 +27,8 @@ dbgap.download <- function(krt, key = FALSE)  {
   file.remove("./sratoolkit.2.9.1-1-mac64.tar.gz")
 
   #Reset the sra settings
-  if (file.exists("~/.ncbi/user-settings.mkfg"))  file.remove("~/.ncbi/user-settings.mkfg")
+  if (dir.exists("~/.ncbi"))  file.rename("~/.ncbi", "~/.ncbi2")
+  if (dir.exists("~/ncbi"))  file.rename("~/ncbi", "~/ncbi2")
 
   # import the key
   system(paste("./sratoolkit.2.9.1-1-mac64/bin/vdb-config --import", key))
@@ -55,6 +56,10 @@ dbgap.download <- function(krt, key = FALSE)  {
   suppressWarnings(file.remove(repo))
   sra <- list.files(pattern = "sratoolkit*")
   system(paste0("rm -r ./", sra))
+  unlink("~/.ncbi", recursive = TRUE)
+  unlink("~/ncbi", recursive = TRUE)
+  if (dir.exists("~/.ncbi2"))  file.rename("~/.ncbi2", "~/.ncbi")
+  if (dir.exists("~/ncbi2"))  file.rename("~/ncbi2", "~/ncbi")
 }
 
 
