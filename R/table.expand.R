@@ -83,26 +83,32 @@ table.expand <- function(study_name, files, destination = getwd())  {
 
   ### write the first map
   variable_id <- lapply(mcl2, function(e) return(colnames(e)[-1]))
-  variable_id <- unlist(variable_id, use.names = TRUE)
-  questionnaire_id <- names(variable_id)
+  variable_id <- unlist(variable_id, use.names = FALSE)
+  questionnaire_id <- unlist(mapply(function(e, f) return(rep(f, ncol(e)-1)), mcl2, names(mcl2)))
+
+  e <- mcl2[[1]]
+  names(e)
+  ncol(e)
+  f <- names(mcl2)[1]
 
   map <- data.frame(cbind(variable_id, questionnaire_id, variable_id, NA, NA, variable_id, questionnaire_id), row.names = NULL)
   map[,c(8:15)] <- NA
   colnames(map) <- c("variable_id", "questionnaire_id", "variable_original_name", "num_or_char", "code_key", "data_label", paste0("sd",1:9))
 
   #### nead to deal with duplicates
-  mapply(function(e, f) {
+  test <- mapply(function(e, f) {
     f <- f[, ENCOUNTER := seq_len(.N), by = c(colnames(f)[1])]
-    dir.create(e, showWarnings = FALSE)
+    #dir.create(e, showWarnings = FALSE)
 
     lapply(2:(length(colnames(f))-1), function(x) {
 
       test <- data.table::data.table(cbind(f[,1], f[,..x], f[,"ENCOUNTER"]))
       test <- na.omit(test, 2)
-      data.table::fwrite(test, paste0(e, colnames(f)[x], ".csv"))
+      return(test)
+      #data.table::fwrite(test, paste0(e, colnames(f)[x], ".csv"))
     })
 
-  }, paste0(treepath, "/", names(mcl2), "/"), mcl2)
+  }, paste0(treepath, "/", names(mcl2)[158], "/"), mcl2[158])
 
   ## Remove empty directories in the tree
   system(paste("find", treepath, "-name .DS_Store -type f -delete"))

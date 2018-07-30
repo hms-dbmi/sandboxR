@@ -4,12 +4,23 @@
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
 #' @import parallel
+#' @import stringi
 
 MapToTree <- function(mappath)  {
+
+  ncores <- parallel::detectCores()
 
   ## Read and save the old map
   map <- read.csv(paste0(mappath, "/0_map.csv"), stringsAsFactors = FALSE, na.strings = "")
   write.csv(map, paste0(mappath, "/.oldmaps/map_", format(Sys.time(), format = "%Y-%m-%d_%H%M_%Z"), ".csv"), row.names = FALSE, na ="")
+
+  ## Replace missing label by old variable name
+  map[,6][is.na(map[,6])] <- map[,3][is.na(map[,6])]
+
+  ## Replace forbidden characters
+  for(i in 6:15) {
+    map[,i] <- gsub("/", "|", gsub("\\\\", "|", gsub("\\{", "(", gsub("\\}", ")", map[,i]))))
+  }
 
   ## Get the actual paths
   treepath <- list.dirs(mappath, recursive = FALSE)
@@ -17,29 +28,28 @@ MapToTree <- function(mappath)  {
 
   a <- parallel::mclapply(list.files(treepath, full.names = TRUE, recursive = TRUE), function(e) {
     return(c(colnames(read.csv(e))[2], e))
-  }, mc.cores = getOption("mc.cores", parallel::detectCores()))
+  }, mc.cores = ncores)
   a <- cbind(sapply(a, "[", 1), sapply(a, "[", 2))
 
   ## Get the new paths
   newpath <- cbind(map[,1],
-                   paste0(treepath, "/",
-                            apply(map[,7:15], 1, function(e) gsub("/NA", "", paste0(e, collapse = "/")))),
-                   paste0(map[,6], " ",  map[,1], ".csv"))
+                   gsub("/NA", "",
+                        file.path(treepath, apply(map[,7:15], 1, function(e) paste0(strtrim(e, 240), collapse = "/")))),
+                   paste0(strtrim(map[,6], 240), " ",  map[,1], ".csv"))
 
-  merge <- merge(a, newpath, by.x = 1, by.y =1)
-  merge <- as.matrix(merge)
+  merge <- as.matrix(merge(a, newpath, by.x = 1, by.y =1))
 
   ## Create the new dirs
-  parallel::mclapply(merge[,3], dir.create, showWarnings = FALSE, recursive = TRUE, mc.cores = getOption("mc.cores", parallel::detectCores()))
+  parallel::mclapply(merge[,3], dir.create, showWarnings = FALSE, recursive = TRUE, mc.cores = ncores)
 
   ## rename the files
-  parallel::mclapply(1:nrow(merge), function(e) {
-    file.rename(merge[e,2], paste0(merge[e,3], "/", merge[e,4]))
-    }, mc.cores = getOption("mc.cores", parallel::detectCores()))
+  lapply(1:nrow(merge), function(e) {
+    file.rename(merge[e,2], file.path(merge[e,3], merge[e,4]))
+    })
 
   ## remove the phv part of the title if possible
   lapply(list.files(treepath, recursive = TRUE, full.names = TRUE), function(e) {
-    to <- paste0(substr(e, 1, regexpr(" phv", e) -1), ".csv")
+    to <- paste0(substr(e, 1, nchar(e) - regexpr(" ", stringi::stri_reverse(e))), ".csv")
     if (!file.exists(to))  file.rename(e, to)
   })
 
