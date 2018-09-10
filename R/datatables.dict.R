@@ -36,7 +36,7 @@ datatables.dict <-function (phs)  {
     if (is.null(dt_label)) dt_label <- dt_sn
 
     return(c(dt_name, dt_sn, dt_label))
-  }, mc.cores = getOption("mc.cores", detectCores()))
+  }, mc.cores = getOption("mc.cores", parallel::detectCores()))
   , check.names = FALSE, fix.empty.names = FALSE, stringsAsFactors = FALSE)))
 
   #Create column names

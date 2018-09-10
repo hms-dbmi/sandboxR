@@ -22,8 +22,7 @@ n.tables <- function(phs)  {
   filelist <- RCurl::getURL(paste0(phenodir, "/"), ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
   filelist <- paste(phenodir, "/", strsplit(filelist, "\r*\n")[[1]], sep = "")
 
-  ind <- (grepl(".data_dict.xml", filelist)) & (!grepl("henotypes.data_dict.xml", filelist)) & (!grepl("ample_Attributes.data_dict.xml", filelist)) &
-    (!grepl("Subject.data_dict", filelist)) & (!grepl("Sample.data_dict", filelist)) & (!grepl("Pedigree.data_dict", filelist))
-
-  return(length(filelist[ind]))
+  return(length(filelist[(grepl(".data_dict.xml", filelist)) & (!grepl("Sample_Attributes.data_dict.xml", filelist)) &
+                           (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) &
+                           (!grepl("Pedigree.data_dict.xml", filelist))]))
 }

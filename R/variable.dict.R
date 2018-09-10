@@ -36,7 +36,7 @@ variables.dict <-function (phs)  {
 
     return(df)
 
-  }, mc.cores = getOption("mc.cores", detectCores()))
+  }, mc.cores = getOption("mc.cores", parallel::detectCores()))
 
   table <- data.table::rbindlist(mcl)
 
