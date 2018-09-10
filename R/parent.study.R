@@ -11,6 +11,7 @@
 parent.study <- function(phs)  {
 
   phs <- phs.version(phs)
+  if (is.parent(phs)) return(message("This is already a parent study"))
 
   content <- RCurl::getURL(paste0("https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=", phs))
 
