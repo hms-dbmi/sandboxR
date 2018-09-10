@@ -8,7 +8,6 @@
 
 #' @export
 
-
 study.name <- function(phs)  {
 
   phs <- phs.version(phs)
@@ -19,12 +18,6 @@ study.name <- function(phs)  {
   stop <- as.numeric(regexpr("\n</span>", content)) - 1
   study_name <-substr(content, start, stop)
 
-
-  #  unlist(strsplit(phs, "\\."))[1]
-#  gapexchange <- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/", "GapExchange_", phs, ".xml")
-#  xmllist <- XML::xmlToList(RCurl::getURLContent(gapexchange))
-#  study_name <- xmllist[["Studies"]][["Study"]][["Configuration"]][["StudyNameEntrez"]]
    return(study_name)
-
 }
 

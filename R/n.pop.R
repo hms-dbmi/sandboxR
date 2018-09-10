@@ -13,51 +13,41 @@
 #' @export
 
 
-n.pop <- function(phs, consentgroups = TRUE, gender = FALSE)  {
+n.pop <- function(phs, consentgroups = TRUE, gender = TRUE)  {
 
   phs <- phs.version(phs)
   url<- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/")
-  filenames2 <- RCurl::getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
-  filenames2 <- paste(url, "/", strsplit(filenames2, "\r*\n")[[1]], sep = "")
-  ind <- grepl("pheno", filenames2)
-  phenodir <- filenames2[ind]
+  filenames <- RCurl::getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
+  filenames <- paste(url, "/", strsplit(filenames, "\r*\n")[[1]], sep = "")
+
+  phenodir <- filenames[grepl("pheno", filenames)]
   filelist <- RCurl::getURL(paste0(phenodir, "/"), ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
   filelist <- paste(phenodir, "/", strsplit(filelist, "\r*\n")[[1]], sep = "")
-  ind <- (grepl("Subject.var_report.xml", filelist))
-  subjdict <- filelist[ind]
+  subjdict <- filelist[grepl("Subject.var_report.xml", filelist)]
 
   #Extract xml
-  xmlfile <- XML::xmlParse(RCurl::getURLContent(subjdict))
-  xmllist <- XML::xmlToList(xmlfile)
+  xmllist <- XML::xmlToList(XML::xmlParse(RCurl::getURLContent(subjdict)))
 
   #Create the data.frame
-  temp <- data.frame()
+  xmllist <- xmllist[which(lapply(xmllist, function(x) return(unlist(x)[".attrs.var_name"])) == "CONSENT")]
 
-  cg <- c()
-  for (i in 1:(length(xmllist)-1))  {
-    if (is.null(xmllist[[i]][[".attrs"]][["var_name"]]))  next
-    if (xmllist[[i]][[".attrs"]][["var_name"]] == "CONSENT")  cg <- c(cg, i)
-  }
-
-  for (j in 2:length(cg))  {
-    name <- unlist(strsplit(xmllist[[cg[j]]][["total"]][["stats"]][["enum"]][["text"]], " "))
+  df <- lapply(xmllist, function(x) {
+    name <- unlist(strsplit(x[["total"]][["stats"]][["enum"]][["text"]], " "))
     name <- name[length(name)]
-    temp[j-1,1] <- substr(name, 2, nchar(name) -1)
-    temp[j-1, 2] <- xmllist[[cg[j]]][["total"]][["subject_profile"]][["sex"]][["male"]]
-    temp[j-1, 3] <- xmllist[[cg[j]]][["total"]][["subject_profile"]][["sex"]][["female"]]
-    temp[j-1, 4] <- xmllist[[cg[j]]][["total"]][["stats"]][["stat"]][["n"]]
-  }
+    name <- substr(name, 2, nchar(name) -1)
+    gender <- x[["total"]][["subject_profile"]][["sex"]]
+    male <- gender[["male"]]
+    female <- gender[["female"]]
+    n <- x[["total"]][["stats"]][["stat"]][["n"]]
+    return(c(consent_group = name, male = male, female = female, total = n))
+  })
 
-  temp[j,1] <- "TOTAL"
-  for (h in 2:4)  {
-    temp[j,h] <- sum(as.numeric(temp[1:(nrow(temp)-1),h]))
-  }
+  df <- data.frame(t(data.frame(df)), stringsAsFactors = F)
+  df[,-1] <- apply(df[,-1], 2, as.integer)
+  df <- rbind(df, c(consent_group = "TOTAL", as.list(apply(df[,-1], 2, sum))))
+  row.names(df) <- NULL
 
-  colnames(temp) <- c("consent_group", "male", "female", "total")
-
-  if (gender == FALSE)  temp <- temp[,c(1,4)]
-  if (consentgroups == TRUE)  return(temp)
-  if (consentgroups == FALSE) return(as.numeric(temp[nrow(temp), ncol(temp)]))
-
+  if (gender == FALSE)  return(df[,c(1:4)])
+  if (consentgroups == TRUE)  return(df)
+  if (consentgroups == FALSE) return(df[nrow(df), ncol(df)])
 }
-

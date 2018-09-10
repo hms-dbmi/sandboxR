@@ -13,14 +13,8 @@ consent.groups <- function(phs)  {
 
   if (!is.parent(phs))  phs <- parent.study(phs)[1]
   phs <- phs.version(phs)
-  unlist(strsplit(phs, "\\."))[1]
-  gapexchange <- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/", "GapExchange_", phs, ".xml")
-  xmllist <- XML::xmlToList(RCurl::getURLContent(gapexchange))
+  url <- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/", "GapExchange_", phs, ".xml")
+  xmllist <- XML::xmlToList(RCurl::getURLContent(url))
   cg <- t(data.frame(xmllist[["Studies"]][["Study"]][["Configuration"]][["ConsentGroups"]]))
-  cg <- data.frame(cg)
-  row.names(cg) <- cg[,1]
-  cg <- cg[,-1]
-  cg
-
+  return(data.frame(cg, row.names = cg[,1])[,-1])
 }
-
