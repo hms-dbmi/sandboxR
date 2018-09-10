@@ -12,7 +12,6 @@
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
 
-
 n.pop <- function(phs, consentgroups = TRUE, gender = TRUE)  {
 
   phs <- phs.version(phs)
