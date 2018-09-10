@@ -13,23 +13,18 @@
 
 n.variables <- function(phs)  {
 
-  phs <- phs.version(phs)
   url<- paste0("ftp://anonymous:anonymous@ftp.ncbi.nlm.nih.gov/dbgap/studies/", unlist(strsplit(phs, "\\."))[1], "/", phs, "/")
-  filenames <- RCurl::getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
-  filenames <- paste(url, strsplit(filenames, "\r*\n")[[1]], sep = "")
 
-  phenodir <- filenames[grepl("pheno", filenames)]
+  filenames <- strsplit(RCurl::getURL(url, ftp.use.epsv = TRUE, dirlistonly = TRUE), "\n")[[1]]
+  phenodir <- paste0(url, filenames[grep("pheno", filenames)], "/")
+  filelist <- strsplit(RCurl::getURL(phenodir, ftp.use.epsv = FALSE, dirlistonly = TRUE), "\n")[[1]]
+  temp <- filelist[(grepl(".data_dict.xml", filelist)) & (!grepl("Sample_Attributes.data_dict.xml", filelist)) &
+                     (!grepl("Subject.data_dict.xml", filelist)) & (!grepl("Sample.data_dict.xml", filelist)) & (!grepl("Pedigree.data_dict.xml", filelist))]
 
-  filelist <- RCurl::getURL(paste0(phenodir, "/"), ftp.use.epsv = FALSE, dirlistonly = TRUE, crlf = TRUE)
-  filelist <- paste(phenodir, "/", strsplit(filelist, "\r*\n")[[1]], sep = "")
+  mcl <- parallel::mclapply(temp, function(e) {
+    xmllist <- XML::xmlToList(RCurl::getURLContent(paste0(phenodir, e)))
+    return(length(which(names(xmllist) == "variable")))
+  }, mc.cores = getOption("mc.cores", parallel::detectCores()))
 
-  ind <- (grepl(".data_dict.xml", filelist)) & (!grepl("henotypes.data_dict.xml", filelist)) & (!grepl("ample_Attributes.data_dict.xml", filelist)) &
-         (!grepl("Subject.data_dict", filelist)) & (!grepl("Sample.data_dict", filelist)) & (!grepl("Pedigree.data_dict", filelist))
-  temp <- filelist[ind]
-
-  temp <- lapply(temp, function(x) {
-    XML::xmlSize(XML::xmlRoot(XML::xmlParse(RCurl::getURLContent(x)))) - 1
-  })
-
-  return(Reduce(sum, temp))
+  return(Reduce(sum, mcl))
 }
