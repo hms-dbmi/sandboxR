@@ -28,7 +28,7 @@ n.pop <- function(phs, consentgroups = TRUE, gender = TRUE)  {
   xmllist <- XML::xmlToList(XML::xmlParse(RCurl::getURLContent(subjdict)))
 
   #Create the data.frame
-  xmllist <- xmllist[which(lapply(xmllist, function(x) return(unlist(x)[".attrs.var_name"])) == "CONSENT")]
+  xmllist <- xmllist[which(grepl("consent", tolower(lapply(xmllist, function(x) return(unlist(x)[".attrs.var_name"])))))]
 
   df <- lapply(xmllist, function(x) {
     name <- unlist(strsplit(x[["total"]][["stats"]][["enum"]][["text"]], " "))
