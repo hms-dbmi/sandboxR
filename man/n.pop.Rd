@@ -4,7 +4,7 @@
 \alias{n.pop}
 \title{Gets the population number of the study}
 \usage{
-n.pop(phs, consentgroups = TRUE, gender = FALSE)
+n.pop(phs, consentgroups = TRUE, gender = TRUE)
 }
 \arguments{
 \item{phs}{dbGap study ID (phs00xxxx, or 00xxxx, or xxx)}

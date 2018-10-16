@@ -8,68 +8,31 @@
 #' @author Gregoire Versmee, Laura Versmee
 #' @export
 
-  dbgap.decrypt <- function(file, key = FALSE)  {
+  dbgap.decrypt <- function(files, key = FALSE)  {
 
     if (key == FALSE) {
-    message("Where is your key?")
-    key <- file.choose()
+      message("Where is your key?")
+      key <- file.choose()
     }
 
     ## escape regex symbols
-    #file <- gsub(" ", "\\\\ ", file)
     key <- gsub(" ", "\\\\ ", key)
 
-    wd <- getwd()
+    # docker run sratools
+    system2("docker", c("run -v", paste0(files, ":/files"), "--rm -it -d --name sratools gversmee/sratoolkit"))
 
-    # DL and untar sratoolkit for mac
-    download.file("http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.1-1/sratoolkit.2.9.1-1-mac64.tar.gz", "./sratoolkit.2.9.1-1-mac64.tar.gz")
-    untar("./sratoolkit.2.8.2-1-mac64.tar.gz")
-    file.remove("./sratoolkit.2.8.2-1-mac64.tar.gz")
-
-    #Reset the sra settings
-    if (file.exists("~/.ncbi/user-settings.mkfg"))  file.remove("~/.ncbi/user-settings.mkfg")
+    # copy key to the container
+    system(paste("docker cp", key, "sratools:/key.ngc"))
 
     # import the key
-    system(paste("./sratoolkit.2.9.1-1-mac64/bin/vdb-config --import", key))
+    system("docker exec sratools vdb-config --import key.ngc")
 
-    #set the wd to the repository
-    p <- read.table("~/.ncbi/user-settings.mkfg")
-    repo <- as.character(p[which(grepl("root", p[ ,1])), 3])
-    setwd(repo)
+    # get the repo
+    wdc <- system('docker exec sratools sh -c "ls -d /root/ncbi/*"', intern = TRUE)
 
-    file2 <- list.files(file, recursive = TRUE, full.names = TRUE)
-    file2<- gsub(" ", "\\\\ ", file2)
+    # decrypt
+    system(paste("docker exec -w ", wdc, 'sratools sh -c "vdb-decrypt /files"'))
 
-    # decrypt the files
-    parallel::mclapply(file2, function(e){
-    system2(paste0(wd, "/sratoolkit.2.9.1-1-mac64/bin/vdb-decrypt"), e)
-    }, mc.cores = getOption("mc.cores", parallel::detectCores()))
-
-    #clean up your mess!
-    setwd(wd)
-    suppressWarnings(file.remove(repo))
-    sra <- list.files(pattern = "sratoolkit*")
-    system(paste0("rm -r ./", sra))
+    # rm container
+    system("docker stop sratools")
   }
-
-
-#    ## file paths cleaning and quoting
-#    file = shQuote( normalizePath( file ))
-#    key  = shQuote( normalizePath( key ))
-#    wd = getwd()
-#
-#    ## get the R temp dir (for the decryption tool)
-#    config.dir = tempdir()
-#
-#    ## import the key and tell vdb what config dir we want to use
-#    system2("vdb-config",c("--import", key, config.dir))
-
-    ## this is required for the decryption program to run without error
-#    setwd(config.dir)
-
-#    ## decrypt the files
-#    g <- system2("vdb-decrypt", file)
-
-    ## go back to initial working dir
-#    setwd(wd)
-#}
