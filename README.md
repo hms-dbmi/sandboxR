@@ -8,7 +8,7 @@
 ```R
 #install.packages("devtools", repos = "https://cran.rstudio.com/")
 library("devtools")
-install_github("hms-dbmi/sanboxR", force = TRUE)
+install_github("hms-dbmi/sandboxR", force = TRUE)
 library(sandboxR)
 ```
 
